@@ -1,0 +1,21 @@
+{
+    "name": "bluestorm/centrum",
+    "description": "Workflow API Client",
+    "authors": [
+        {
+            "name": "Joe Ware",
+            "email": "joe@joeware.io"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Bluestorm\\Centrum\\": "src/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.3"
+    },
+    "require": {
+        "guzzlehttp/guzzle": "^6.3"
+    }
+}
