@@ -1,8 +1,15 @@
 <?php
 
+use Bluestorm\Centrum\ApiUnavailableException;
 use Bluestorm\Centrum\Centrum;
+use Bluestorm\Centrum\Exceptions\AuthenticationException;
+use Bluestorm\Centrum\Exceptions\IdIsRequiredException;
+use Bluestorm\Centrum\Exceptions\IdMustBeIntegerException;
+use Bluestorm\Centrum\Exceptions\ResourceIsRequiredException;
 use Bluestorm\Centrum\Exceptions\ValidationErrorsException;
 use Bluestorm\Centrum\Request;
+use Bluestorm\Centrum\Resource;
+use Bluestorm\Centrum\ResourceNotFoundException;
 use Bluestorm\Centrum\Response;
 use PHPUnit\Framework\TestCase;
 
@@ -10,13 +17,12 @@ class RequestTest extends TestCase
 {
 	protected $resource = 'website';
 	protected $apiKey = '6627b354a4cd3f828982d1a8168cd3201afeca1c';
-	protected $endPoint = 'https://f484e533.ngrok.io/api/';
+	protected $baseUrl = 'http://centrum.dev/api/';
 
 	public function setUp()
 	{
-		parent::setUp();
 		Centrum::setApiKey($this->apiKey);
-		Centrum::setEndpoint($this->endPoint);
+		Centrum::setBaseUrl($this->baseUrl);
 	}
 
 	public function testClassExists()
@@ -24,62 +30,124 @@ class RequestTest extends TestCase
 		$this->assertTrue(class_exists(Request::class));
 	}
 
-	public function testCanCreateInstanceOfClass()
+	public function testBadApiKeyThrowsException()
 	{
-		$this->assertTrue(new Request($this->resource) instanceof Request);
+		$this->expectException(AuthenticationException::class);
+
+		Centrum::setApiKey('bad-key');
+		Centrum::resource('website')->get();
+	}
+
+	public function testBadBaseUrlThrowsException()
+	{
+		$this->expectException(ApiUnavailableException::class);
+
+		Centrum::setBaseUrl('http://bad-base-url.com/api/');
+		Centrum::resource('website')->get();
+	}
+
+	public function testCantInstantiateRequestWithoutResourceName()
+	{
+		$this->expectException(ResourceIsRequiredException::class);
+
+		new Request(null);
+	}
+
+	public function testIdIsRequired()
+	{
+		$this->expectException(IdIsRequiredException::class);
+
+		$request = new Request('test');
+		$request->find(null);
+	}
+
+	public function testIdMustBeInteger()
+	{
+		$this->expectException(IdMustBeIntegerException::class);
+
+		$request = new Request('test');
+		$request->find('abc');
 	}
 
 	public function testGetMethodReturnsResponse()
 	{
 		$request = new Request($this->resource);
-		$this->assertTrue($request->get() instanceof Response);
+
+		$this->assertInstanceOf(Response::class, $request->get());
 	}
 
 	public function testFindMethodReturnsResponse()
 	{
 		$request = new Request($this->resource);
 		$resource = $request->find(30);
-		$this->assertTrue($resource instanceof Response);
-		// var_dump($resource);
+
+		$this->assertInstanceOf(Resource::class, $resource);
 	}
 
-	public function testCreateReturnsResponse()
+	public function testInvalidResourceRequest()
 	{
-		$request = Centrum::website()->create([
-			'name' => 'Centrum test wesbsite',
-			'url'  => 'centrum.bluestorm.design',
-		]);
-		$this->assertTrue($request instanceof Response);
+		$this->expectException(ResourceNotFoundException::class);
+
+		$request = new Request($this->resource);
+		$request->find(-1);
+	}
+
+	public function testCreateReturnsResource()
+	{
+		$resource = $this->createResource();
+
+		$this->assertInstanceOf(Resource::class, $resource);
 	}
 
 	public function testCreateReturnsValidationError()
 	{
 		$this->expectException(ValidationErrorsException::class);
 
-		$request = Centrum::website()->create([
-			'name' => 'Centrum test wesbsite',
+		$request = new Request($this->resource);
+		$request->create([
+			'name' => 'Centrum test website'
 		]);
 	}
 
-	public function testCanUpdateResource() {
+	public function testCanUpdateResource()
+	{
+		$resource = $this->createResource();
+
 		$randomName = uniqid();
 
-		$request = Centrum::website()->update(385, [
-			'name'	=>	$randomName,
+		$request = new Request($this->resource);
+		$request->update($resource->id, [
+			'name' => $randomName
 		]);
 
-		$this->assertTrue($request instanceof Response);
+		$request = new Request($this->resource);
+		$resource = $request->find($resource->id);
 
-		$resource = Centrum::website()->find(385)->get();
-
-		$this->assertTrue($resource->name == $randomName);
-
+		$this->assertEquals($resource->name, $randomName);
 	}
 
+	public function testCanDeleteResource()
+	{
+		$resource = $this->createResource();
 
-	/*	TODO
-		Update
-		Delete
-	*/
+		$request = Centrum::resource($this->resource);
+		$request->delete($resource->id);
 
+		$this->expectException(ResourceNotFoundException::class);
+
+		$request = new Request($this->resource);
+		$request->find($resource->id);
+	}
+
+	private function createResource()
+	{
+		$request = new Request($this->resource);
+
+		$resource = $request->create([
+			'name' => 'Centrum test website',
+			'url' => 'centrum.bluestorm.design'
+		]);
+
+		return $resource;
+	}
 }

@@ -4,7 +4,7 @@ namespace Bluestorm\Centrum;
 
 use Bluestorm\Centrum\Exceptions\ApiKeyRequiredException;
 use Bluestorm\Centrum\Exceptions\ClassNotInstantiableException;
-use Bluestorm\Centrum\Exceptions\EndpointRequiredException;
+use Bluestorm\Centrum\Exceptions\ResourceNotValidException;
 
 /**
  * Class Centrum
@@ -12,23 +12,25 @@ use Bluestorm\Centrum\Exceptions\EndpointRequiredException;
  */
 class Centrum
 {
-
 	/**
-	 * @var
+	 * @var string $apiKey
 	 */
 	private static $apiKey;
+
 	/**
-	 * @var
+	 * @var string $baseUrl
 	 */
-	private static $endPoint;
+	private static $baseUrl = 'https://centrum.bluestorm.design/api/';
+
 	/**
-	 * @var bool
+	 * @var bool $debug
 	 */
 	private static $debug = false;
+
 	/**
-	 * @var
+	 * @var array $resources
 	 */
-	private static $resources;
+	private static $resources = [];
 
 	/**
 	 * Centrum constructor.
@@ -40,7 +42,18 @@ class Centrum
 	}
 
 	/**
-	 * @return mixed
+	 * @param $name
+	 * @param $arguments
+	 *
+	 * @return Request
+	 */
+	public static function __callStatic($name, $arguments)
+	{
+		return self::resource($name);
+	}
+
+	/**
+	 * @return string
 	 */
 	public static function getApiKey()
 	{
@@ -50,7 +63,7 @@ class Centrum
 	/**
 	 * @param $key
 	 *
-	 * @return mixed
+	 * @return string
 	 */
 	public static function setApiKey($key)
 	{
@@ -60,67 +73,23 @@ class Centrum
 	}
 
 	/**
-	 * @return mixed
+	 * @return string
 	 */
-	public static function getEndpoint()
+	public static function getBaseUrl()
 	{
-		return self::$endPoint;
+		return self::$baseUrl;
 	}
 
 	/**
-	 * @param $endPoint
+	 * @param $baseUrl
 	 *
-	 * @return mixed
+	 * @return string
 	 */
-	public static function setEndpoint($endPoint)
+	public static function setBaseUrl($baseUrl)
 	{
-		self::$endPoint = $endPoint;
+		self::$baseUrl = $baseUrl;
 
-		return self::$endPoint;
-	}
-
-	/**
-	 * @param $name
-	 * @param $arguments
-	 *
-	 * @return Request
-	 */
-	public static function __callStatic($name, $arguments)
-	{
-		self::checkConfig();
-
-		return new Request($name);
-	}
-
-	/**
-	 * @return void
-	 */
-	public static function checkConfig()
-	{
-		self::checkApiKey();
-		self::checkEndPoint();
-	}
-
-	/**
-	 * @throws ApiKeyRequiredException
-	 */
-	private static function checkApiKey()
-	{
-		if ( empty(self::$apiKey) )
-		{
-			throw new ApiKeyRequiredException();
-		}
-	}
-
-	/**
-	 * @throws EndpointRequiredException
-	 */
-	private static function checkEndPoint()
-	{
-		if ( empty(self::$endPoint) )
-		{
-			throw new EndpointRequiredException();
-		}
+		return self::$baseUrl;
 	}
 
 	/**
@@ -132,7 +101,7 @@ class Centrum
 	}
 
 	/**
-	 * @param $debug
+	 * @param bool $debug
 	 *
 	 * @return bool
 	 */
@@ -144,19 +113,54 @@ class Centrum
 	}
 
 	/**
-	 * @return Response
+	 * @throws ApiKeyRequiredException
+	 */
+	public static function checkConfig()
+	{
+		if(empty(self::$apiKey))
+		{
+			throw new ApiKeyRequiredException();
+		}
+	}
+
+	public static function checkResourceIsValid($resource)
+	{
+		self::getResources();
+
+		if(!in_array($resource, self::$resources))
+		{
+			throw new ResourceNotValidException($resource);
+		}
+	}
+
+	/**
+	 * @return array
 	 */
 	public static function getResources()
 	{
-		if ( !empty(self::$resources) )
+		if(empty(self::$resources))
 		{
-			return self::$resources;
+			$response = new Request('resource');
+			$resources = $response->get();
+
+			self::$resources = array_map(function($resource)
+			{
+				return $resource->resource;
+			}, $resources->get());
 		}
 
-		$response = new Request('resource');
-		$resources = $response->get();
-		self::$resources = $resources;
+		return self::$resources;
+	}
 
-		return $resources;
+	/**
+	 * @param $resource
+	 * @return Request
+	 */
+	public static function resource($resource)
+	{
+		self::checkConfig();
+		self::checkResourceIsValid($resource);
+
+		return new Request($resource);
 	}
 }

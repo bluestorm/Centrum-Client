@@ -9,43 +9,18 @@ use function GuzzleHttp\Psr7\parse_query;
 
 class Response implements IteratorAggregate
 {
+	private $resource;
 	private $resources = [];
 	private $meta = [];
 
-	public function __construct($response)
+	public function __construct($resource, $response)
 	{
-		$responseArray = json_decode((string)$response->getBody());
-		$this->resources = $this->setResources($responseArray);
-		$this->meta = $this->setMeta($responseArray);
-	}
+		$responseArray = is_array($response) ? $response : json_decode((string) $response->getBody());
 
-	private function setResources($response)
-	{
-		if ( !isset($response->data) )
-		{
-			return [];
-		}
+		$this->resource = $resource;
 
-		$data = $response->data;
-
-		if ( is_array($data) && count($data > 1))
-		{
-			$resources = array_map(function ($resource)
-			{
-				return new Resource($resource);
-			}, $data);
-		}
-		else
-		{
-			$resources = new Resource($data);
-		}
-
-		return $resources;
-	}
-
-	private function setMeta($response)
-	{
-		return isset($response->meta) ? $response->meta : [];
+		$this->setResources($responseArray);
+		$this->setMeta($responseArray);
 	}
 
 	public function getIterator()
@@ -53,78 +28,80 @@ class Response implements IteratorAggregate
 		return new ArrayIterator($this->resources);
 	}
 
+	private function setResources($response)
+	{
+		if(!isset($response->data))
+		{
+			return [];
+		}
+
+		if(is_array($response->data))
+		{
+			$resources = array_map(function($resourceData)
+			{
+				return new Resource($this->resource, $resourceData);
+			}, $response->data);
+		}
+		else
+		{
+			$resources = [ new Resource($this->resource, $response->data) ];
+		}
+
+		$this->resources = $resources;
+
+		return $this;
+	}
+
+	private function setMeta($response)
+	{
+		$this->meta = isset($response->meta) ? $response->meta : [];
+
+		return $this;
+	}
+
+	public function getPagination()
+	{
+		return isset($this->meta->pagination->links) ? $this->meta->pagination->links : null;
+	}
+
+	public function getNextPage()
+	{
+		if(!isset($this->getPagination()->next))
+		{
+			return null;
+		}
+
+		$parsed_url = parse_url($this->getPagination()->next);
+		$parsed_query = parse_query($parsed_url['query']);
+
+		return $parsed_query['page'];
+	}
+
+	public function getPreviousPage()
+	{
+		if(!isset($this->getPagination()->previous))
+		{
+			return null;
+		}
+
+		$parsed_url = parse_url($this->getPagination()->previous);
+		$parsed_query = parse_query($parsed_url['query']);
+
+		return $parsed_query['page'];
+	}
+
 	public function get()
 	{
 		return $this->resources;
 	}
 
-	public function getMeta($key = null)
+	public function first()
 	{
-		if ( is_null($key) )
+		if(!isset($this->resources[0]))
 		{
-			return $this->meta;
-		}
-		else
-		{
-			if ( isset($this->meta[$key]) )
-			{
-				return $this->meta[$key];
-			}
-			else
-			{
-				throw new AttributeDoesNotExistException();
-
-				return null;
-			}
+			throw new ResourceNotFoundException;
 		}
 
-		return $this->meta;
+		return $this->resources[0];
 	}
-
-	public function getNextPage()
-	{
-		if ( !isset($this->getPagination('links')->next) )
-		{
-			return null;
-		}
-		$parsed_url = parse_url($this->getPagination('links')->next);
-		$parsed_query = parse_query($parsed_url['query']);
-
-		return $parsed_query['page'];
-	}
-
-	public function getPagination($key = null)
-	{
-		if ( is_null($key) )
-		{
-			return $this->meta->pagination;
-		}
-		else
-		{
-			if ( isset($this->meta->pagination->{$key}) )
-			{
-				return $this->meta->pagination->{$key};
-			}
-			else
-			{
-				throw new AttributeDoesNotExistException();
-			}
-		}
-
-		return $this->meta->pagination;
-	}
-
-	public function getPrevPage()
-	{
-		if ( !isset($this->getPagination('links')->previous) )
-		{
-			return null;
-		}
-		$parsed_url = parse_url($this->getPagination('links')->previous);
-		$parsed_query = parse_query($parsed_url['query']);
-
-		return $parsed_query['page'];
-	}
-
-
 }

@@ -2,7 +2,7 @@
 
 namespace Bluestorm\Centrum\Exceptions;
 
-class IdIsRequiredException extends \Exception
+class AuthenticationException extends \Exception
 {
 
 }

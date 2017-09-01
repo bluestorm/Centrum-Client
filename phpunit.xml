@@ -10,9 +10,17 @@
          stopOnFailure="false"
          syntaxCheck="false"
 >
+    <filter>
+        <whitelist processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">./src/</directory>
+        </whitelist>
+    </filter>
     <testsuites>
         <testsuite name="Test Suite">
             <directory suffix=".php">./tests/</directory>
         </testsuite>
     </testsuites>
+    <logging>
+        <log type="coverage-html" target="tests/coverage/" />
+    </logging>
 </phpunit>

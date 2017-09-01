@@ -7,24 +7,41 @@ use Bluestorm\Centrum\Exceptions\AttributeDoesNotExistException;
 
 class Resource
 {
-	protected $response;
+	protected $resource;
 	protected $attributes = [];
 
-	public function __construct($resourceArray = [])
+	public function __construct($resource, $resourceArray = [])
 	{
-		$this->attributes = $resourceArray;
+		$this->resource = $resource;
+		$this->attributes = (array) $resourceArray;
+	}
+
+	public function __set($key, $value)
+	{
+		$this->attributes[$key] = $value;
 	}
 
 	public function __get($key)
 	{
-		if ( !isset($this->attributes[$key]) )
+		if(!isset($this->attributes[$key]))
 		{
-			throw new AttributeDoesNotExistException;
-
-			return null;
+			throw new AttributeDoesNotExistException($key . ' attribute does not exist on resource ' . $this->resource);
 		}
 
 		return $this->attributes[$key];
 	}
 
+	public function update($data)
+	{
+		$request = new Request($this->resource);
+
+		return $request->update($this->id, $data);
+	}
+
+	public function delete()
+	{
+		$request = new Request($this->resource);
+
+		return $request->delete($this->id);
+	}
 }

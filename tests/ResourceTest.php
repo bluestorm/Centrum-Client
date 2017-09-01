@@ -1,13 +1,21 @@
 <?php
 
+use Bluestorm\Centrum\Exceptions\AttributeDoesNotExistException;
+use Bluestorm\Centrum\Request;
 use Bluestorm\Centrum\Resource;
+use Bluestorm\Centrum\ResourceNotFoundException;
 use PHPUnit\Framework\TestCase;
 
 class ResourceTest extends TestCase
 {
+	protected $resource = 'website';
+	protected $resourceObject;
 
-	protected $exampleJSON = "[
-                                  {
+	protected static $createdResourceId;
+
+	public function setUp()
+	{
+		$this->resourceObject = new Resource('test', json_decode("{
                                     \"_id\": \"599fe2b1433aca29a1a3f306\",
                                     \"index\": 0,
                                     \"guid\": \"68fbd6d3-3079-43d6-9313-e7fe89c464c5\",
@@ -21,23 +29,8 @@ class ResourceTest extends TestCase
                                       \"last\": \"Zimmerman\"
                                     },
                                     \"company\": \"ROCKLOGIC\"
-                                  },
-                                  {
-                                    \"_id\": \"599fe2b11efa1b630db23f12\",
-                                    \"index\": 1,
-                                    \"guid\": \"0b766122-da20-4759-83fb-8b1dda271385\",
-                                    \"isActive\": true,
-                                    \"balance\": \"$3,395.02\",
-                                    \"picture\": \"http://placehold.it/32x32\",
-                                    \"age\": 39,
-                                    \"eyeColor\": \"blue\",
-                                    \"name\": {
-                                      \"first\": \"Taylor\",
-                                      \"last\": \"Clayton\"
-                                    },
-                                    \"company\": \"NIXELT\"
-                                  }
-                               ]";
+                                  }", true));
+	}
 
 	public function testClassExists()
 	{
@@ -46,13 +39,65 @@ class ResourceTest extends TestCase
 
 	public function testCanCreateInstanceOfClass()
 	{
-		$this->assertTrue(new Resource(json_decode($this->exampleJSON, true)) instanceof Resource);
+		$this->assertInstanceOf(Resource::class, $this->resourceObject);
 	}
 
-	public function testCanAccessAttributeOnClass()
+	public function testCanAccessValidAttribute()
 	{
-		$resource = new Resource(json_decode($this->exampleJSON, true)[0]);
-		var_dump($resource->guid);
-		$this->assertTrue(json_decode($this->exampleJSON, true)[0]['guid'] == $resource->guid);
+		$this->assertTrue($this->resourceObject->guid == '68fbd6d3-3079-43d6-9313-e7fe89c464c5');
+	}
+
+	public function testAccessingInvalidExceptionThrowsException()
+	{
+		$this->expectException(AttributeDoesNotExistException::class);
+
+		$this->resourceObject->abc;
+	}
+
+	public function testCanSetAttribute()
+	{
+		$randomName = uniqid();
+
+		$this->resourceObject->test = $randomName;
+
+		$this->assertEquals($this->resourceObject->test, $randomName);
+	}
+
+	public function testCanUpdateResource()
+	{
+		$resource = $this->createResource();
+
+		$randomName = uniqid();
+
+		$resource->update([ 'name' => $randomName ]);
+
+		$request = new Request($this->resource);
+		$resource = $request->find($resource->id);
+
+		$this->assertEquals($resource->name, $randomName);
+	}
+
+	public function testCanDeleteResource()
+	{
+		$resource = $this->createResource();
+
+		$resource->delete();
+
+		$this->expectException(ResourceNotFoundException::class);
+
+		$request = new Request($this->resource);
+		$request->find($resource->id);
+	}
+
+	private function createResource()
+	{
+		$request = new Request($this->resource);
+
+		$resource = $request->create([
+			'name' => 'Centrum test website',
+			'url' => 'centrum.bluestorm.design'
+		]);
+
+		return $resource;
 	}
 }

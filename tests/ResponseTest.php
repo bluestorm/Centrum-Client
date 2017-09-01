@@ -1,7 +1,9 @@
 <?php
 
 use Bluestorm\Centrum\Centrum;
+use Bluestorm\Centrum\Request;
 use Bluestorm\Centrum\Resource;
+use Bluestorm\Centrum\ResourceNotFoundException;
 use Bluestorm\Centrum\Response;
 use PHPUnit\Framework\TestCase;
 
@@ -9,39 +11,39 @@ class ResponseTest extends TestCase
 {
 	protected $resource = 'website';
 	protected $apiKey = '6627b354a4cd3f828982d1a8168cd3201afeca1c';
-	protected $endPoint = 'https://f484e533.ngrok.io/api/';
+	protected $baseUrl = 'http://centrum.dev/api/';
 
 	public function setUp()
 	{
-		parent::setUp();
 		Centrum::setApiKey($this->apiKey);
-		Centrum::setEndpoint($this->endPoint);
+		Centrum::setBaseUrl($this->baseUrl);
 	}
 
 	public function testCanInstantiateClass()
 	{
-		$response = $this->getResponse();
-		$this->assertTrue($response instanceof Response);
-	}
+		$request = new Request($this->resource);
+		$response = $request->get(2);
 
-	protected function getResponse()
-	{
-		$response = Centrum::website()->get(2);
-
-		return $response;
+		$this->assertInstanceOf(Response::class, $response);
 	}
 
 	public function testCanAccessResources()
 	{
-		$response = $this->getResponse();
+		$request = new Request($this->resource);
+		$response = $request->get(2);
+
 		$resources = $response->get();
+
 		$this->assertTrue(is_array($resources));
 	}
 
 	public function testCanResourceArrayContainsResources()
 	{
-		$response = $this->getResponse();
+		$request = new Request($this->resource);
+		$response = $request->get(2);
+
 		$resources = $response->get();
+
 		$this->assertContainsOnlyInstancesOf(
 			Resource::class,
 			$resources
@@ -50,15 +52,47 @@ class ResponseTest extends TestCase
 
 	public function testCanGetNextPageNumber()
 	{
-		$response = $this->getResponse();
+		$request = new Request($this->resource);
+		$response = $request->get(2);
+
 		$this->assertTrue(is_string($response->getNextPage()));
 	}
 
 	public function testCanGetPreviousPageNumber()
 	{
-		$response = $this->getResponse();
-		$this->assertTrue(is_string($response->getPrevPage()));
+		$request = new Request($this->resource);
+		$response = $request->get(2);
+
+		$this->assertTrue(is_string($response->getPreviousPage()));
 	}
 
+	public function testCanIterateResponse()
+	{
+		$request = new Request($this->resource);
+		$response = $request->get(2);
 
+		$this->assertInstanceOf(Traversable::class, $response);
+
+		foreach($response as $resource)
+		{
+			// Nothing
+		}
+	}
+
+	public function testEmptyResponseThrowsException()
+	{
+		$this->expectException(ResourceNotFoundException::class);
+
+		(new Response('test', []))->first();
+	}
+
+	public function testGetNullNextPage()
+	{
+		$this->assertEquals((new Response('test', []))->getNextPage(), null);
+	}
+
+	public function testGetNullPreviousPage()
+	{
+		$this->assertEquals((new Response('test', []))->getPreviousPage(), null);
+	}
 }
