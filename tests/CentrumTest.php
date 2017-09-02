@@ -2,6 +2,7 @@
 
 use Bluestorm\Centrum\Centrum;
 use Bluestorm\Centrum\Exceptions\ApiKeyRequiredException;
+use Bluestorm\Centrum\Exceptions\ApiUnavailableException;
 use Bluestorm\Centrum\Exceptions\ClassNotInstantiableException;
 use Bluestorm\Centrum\Exceptions\ResourceNotValidException;
 use Bluestorm\Centrum\Request;
@@ -11,6 +12,14 @@ class CentrumTest extends TestCase
 {
 	protected $apiKey = '6627b354a4cd3f828982d1a8168cd3201afeca1c';
 	protected $baseUrl = 'http://centrum.dev/api/';
+
+	public function setUp()
+	{
+		if(!Centrum::isAvailable())
+		{
+			$this->fail('API must be available to run tests.');
+		}
+	}
 
 	public function testClassExists()
 	{
@@ -28,7 +37,8 @@ class CentrumTest extends TestCase
 	{
 		$this->expectException(ApiKeyRequiredException::class);
 
-		Centrum::checkConfig();
+		Centrum::setApiKey('');
+		Centrum::getResources();
 	}
 
 	public function testCanSetApiKey()
@@ -51,7 +61,7 @@ class CentrumTest extends TestCase
 
 		$this->assertEquals(Centrum::getDebug(), true);
 
-		Centrum::setDebug(false);
+		Centrum::setDebug(false); // Undo that
 	}
 
 	public function testCanGetResources()
@@ -61,7 +71,7 @@ class CentrumTest extends TestCase
 		$this->assertTrue(count($resources) > 0);
 	}
 
-	public function testStaticRespourceMethod()
+	public function testStaticResourceMethod()
 	{
 		$this->assertInstanceOf(Request::class, Centrum::website());
 	}

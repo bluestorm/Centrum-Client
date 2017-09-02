@@ -3,13 +3,17 @@
 namespace Bluestorm\Centrum;
 
 use Bluestorm\Centrum\Exceptions\AuthenticationException;
+use Bluestorm\Centrum\Exceptions\ApiUnavailableException;
 use Bluestorm\Centrum\Exceptions\IdIsRequiredException;
 use Bluestorm\Centrum\Exceptions\IdMustBeIntegerException;
 use Bluestorm\Centrum\Exceptions\ResourceIsRequiredException;
+use Bluestorm\Centrum\Exceptions\ResourceNotFoundException;
+use Bluestorm\Centrum\Exceptions\ResourceNotValidException;
 use Bluestorm\Centrum\Exceptions\ValidationErrorsException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
 
 class Request
 {
@@ -47,19 +51,31 @@ class Request
 		{
 			$this->handleException($e);
 		}
+		catch(RequestException $e)
+		{
+			$this->handleException($e);
+		}
 
 		return new Response($this->resource, $response);
 	}
 
 	private function handleException(\Exception $e)
 	{
-		if($e->getCode() == 401)
+		if($e instanceof RequestException)
 		{
-			throw new AuthenticationException;
+			throw new ApiUnavailableException;
+		}
+		if($e->getCode() == 410)
+		{
+			throw new ResourceNotValidException($this->resource);
 		}
 		elseif($e->getCode() == 404)
 		{
-			throw new ResourceNotFoundException;
+			throw new ApiUnavailableException;
+		}
+		elseif($e->getCode() == 401)
+		{
+			throw new AuthenticationException;
 		}
 		elseif($e->getCode() == 400)
 		{

@@ -3,6 +3,7 @@
 namespace Bluestorm\Centrum;
 
 use Bluestorm\Centrum\Exceptions\ApiKeyRequiredException;
+use Bluestorm\Centrum\Exceptions\ApiUnavailableException;
 use Bluestorm\Centrum\Exceptions\ClassNotInstantiableException;
 use Bluestorm\Centrum\Exceptions\ResourceNotValidException;
 
@@ -31,6 +32,11 @@ class Centrum
 	 * @var array $resources
 	 */
 	private static $resources = [];
+
+	/**
+	 * @var bool $available
+	 */
+	private static $available = true;
 
 	/**
 	 * Centrum constructor.
@@ -68,8 +74,7 @@ class Centrum
 	public static function setApiKey($key)
 	{
 		self::$apiKey = $key;
-
-		return self::$apiKey;
+		self::checkConfig();
 	}
 
 	/**
@@ -88,8 +93,6 @@ class Centrum
 	public static function setBaseUrl($baseUrl)
 	{
 		self::$baseUrl = $baseUrl;
-
-		return self::$baseUrl;
 	}
 
 	/**
@@ -108,19 +111,11 @@ class Centrum
 	public static function setDebug($debug)
 	{
 		self::$debug = $debug;
-
-		return self::$debug;
 	}
 
-	/**
-	 * @throws ApiKeyRequiredException
-	 */
-	public static function checkConfig()
+	public static function isAvailable()
 	{
-		if(empty(self::$apiKey))
-		{
-			throw new ApiKeyRequiredException();
-		}
+		return self::$available;
 	}
 
 	public static function checkResourceIsValid($resource)
@@ -140,13 +135,24 @@ class Centrum
 	{
 		if(empty(self::$resources))
 		{
-			$response = new Request('resource');
-			$resources = $response->get();
-
-			self::$resources = array_map(function($resource)
+			try
 			{
-				return $resource->resource;
-			}, $resources->get());
+				$response = new Request('resource');
+				$resources = $response->get();
+
+				self::$resources = array_map(function($resource)
+				{
+					return $resource->resource;
+				}, $resources->get());
+			}
+			catch(ApiUnavailableException $e)
+			{
+				// Allows pure 404 exceptions (not resource 404 not found exceptions) to
+				// throw ResourceNotValidException instead which it would have, had the
+				// server been available.
+
+				self::$available = false;
+			}
 		}
 
 		return self::$resources;
@@ -162,5 +168,16 @@ class Centrum
 		self::checkResourceIsValid($resource);
 
 		return new Request($resource);
+	}
+
+	/**
+	 * @throws ApiKeyRequiredException
+	 */
+	private static function checkConfig()
+	{
+		if(empty(self::$apiKey) || !self::$apiKey || strlen(self::$apiKey) < 1)
+		{
+			throw new ApiKeyRequiredException();
+		}
 	}
 }

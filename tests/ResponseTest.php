@@ -17,6 +17,11 @@ class ResponseTest extends TestCase
 	{
 		Centrum::setApiKey($this->apiKey);
 		Centrum::setBaseUrl($this->baseUrl);
+
+		if(!Centrum::isAvailable())
+		{
+			$this->fail('API must be available to run tests.');
+		}
 	}
 
 	public function testCanInstantiateClass()

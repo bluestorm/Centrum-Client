@@ -1,5 +1,6 @@
 <?php
 
+use Bluestorm\Centrum\Centrum;
 use Bluestorm\Centrum\Exceptions\AttributeDoesNotExistException;
 use Bluestorm\Centrum\Request;
 use Bluestorm\Centrum\Resource;
@@ -16,20 +17,25 @@ class ResourceTest extends TestCase
 	public function setUp()
 	{
 		$this->resourceObject = new Resource('test', json_decode("{
-                                    \"_id\": \"599fe2b1433aca29a1a3f306\",
-                                    \"index\": 0,
-                                    \"guid\": \"68fbd6d3-3079-43d6-9313-e7fe89c464c5\",
-                                    \"isActive\": false,
-                                    \"balance\": \"$2,367.97\",
-                                    \"picture\": \"http://placehold.it/32x32\",
-                                    \"age\": 23,
-                                    \"eyeColor\": \"green\",
-                                    \"name\": {
-                                      \"first\": \"Davidson\",
-                                      \"last\": \"Zimmerman\"
-                                    },
-                                    \"company\": \"ROCKLOGIC\"
-                                  }", true));
+      \"_id\": \"599fe2b1433aca29a1a3f306\",
+      \"index\": 0,
+      \"guid\": \"68fbd6d3-3079-43d6-9313-e7fe89c464c5\",
+      \"isActive\": false,
+      \"balance\": \"$2,367.97\",
+      \"picture\": \"http://placehold.it/32x32\",
+      \"age\": 23,
+      \"eyeColor\": \"green\",
+      \"name\": {
+        \"first\": \"Davidson\",
+        \"last\": \"Zimmerman\"
+      },
+      \"company\": \"ROCKLOGIC\"
+    }", true));
+
+		if(!Centrum::isAvailable())
+		{
+			$this->fail('API must be available to run tests.');
+		}
 	}
 
 	public function testClassExists()
