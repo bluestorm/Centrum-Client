@@ -1,7 +1,6 @@
 <?php
 
 use Bluestorm\Centrum\Centrum;
-use Bluestorm\Centrum\Exceptions\ApiUnavailableException;
 use Bluestorm\Centrum\Exceptions\AttributeDoesNotExistException;
 use Bluestorm\Centrum\Exceptions\ResourceNotFoundException;
 use Bluestorm\Centrum\Request;

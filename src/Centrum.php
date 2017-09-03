@@ -44,7 +44,7 @@ class Centrum
 	 */
 	public function __construct()
 	{
-		throw new ClassNotInstantiableException();
+		throw new ClassNotInstantiableException;
 	}
 
 	/**
@@ -74,6 +74,7 @@ class Centrum
 	public static function setApiKey($key)
 	{
 		self::$apiKey = $key;
+
 		self::checkConfig();
 	}
 
@@ -204,7 +205,7 @@ class Centrum
 	{
 		if(empty(self::$apiKey) || !self::$apiKey || strlen(self::$apiKey) < 1)
 		{
-			throw new ApiKeyRequiredException();
+			throw new ApiKeyRequiredException;
 		}
 	}
 }
