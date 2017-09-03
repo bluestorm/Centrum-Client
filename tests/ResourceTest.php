@@ -1,21 +1,39 @@
 <?php
 
 use Bluestorm\Centrum\Centrum;
+use Bluestorm\Centrum\Exceptions\ApiUnavailableException;
 use Bluestorm\Centrum\Exceptions\AttributeDoesNotExistException;
+use Bluestorm\Centrum\Exceptions\ResourceNotFoundException;
 use Bluestorm\Centrum\Request;
 use Bluestorm\Centrum\Resource;
-use Bluestorm\Centrum\ResourceNotFoundException;
 use PHPUnit\Framework\TestCase;
 
 class ResourceTest extends TestCase
 {
 	protected $resource = 'website';
+	protected $apiKey = '';
+	protected $baseUrl = 'http://centrum.dev/api/';
 	protected $resourceObject;
 
 	protected static $createdResourceId;
 
 	public function setUp()
 	{
+		$this->apiKey = getenv('API_KEY');
+
+		if(!$this->apiKey)
+		{
+			$this->fail('API key is required to run tests.');
+		}
+
+		if(!Centrum::isAvailable())
+		{
+			$this->fail('API must be available to run tests.');
+		}
+
+		Centrum::setApiKey($this->apiKey);
+		Centrum::setBaseUrl($this->baseUrl);
+
 		$this->resourceObject = new Resource('test', json_decode("{
       \"_id\": \"599fe2b1433aca29a1a3f306\",
       \"index\": 0,
@@ -31,11 +49,6 @@ class ResourceTest extends TestCase
       },
       \"company\": \"ROCKLOGIC\"
     }", true));
-
-		if(!Centrum::isAvailable())
-		{
-			$this->fail('API must be available to run tests.');
-		}
 	}
 
 	public function testClassExists()

@@ -1,10 +1,14 @@
 {
-    "name": "bluestorm/centrum",
-    "description": "Workflow API Client",
+    "name": "bluestorm/centrum-client",
+    "description": "Bluestorm Centrum API Client",
     "authors": [
         {
             "name": "Joe Ware",
             "email": "joe@joeware.io"
+        },
+        {
+            "name": "Adam Burton",
+            "email": "adam@burt0n.net"
         }
     ],
     "autoload": {
@@ -13,6 +17,7 @@
         }
     },
     "require-dev": {
+        "ext-xdebug": "*",
         "phpunit/phpunit": "^6.3"
     },
     "require": {

@@ -1,33 +1,40 @@
 <?php
 
-use Bluestorm\Centrum\ApiUnavailableException;
 use Bluestorm\Centrum\Centrum;
+use Bluestorm\Centrum\Exceptions\ApiUnavailableException;
 use Bluestorm\Centrum\Exceptions\AuthenticationException;
 use Bluestorm\Centrum\Exceptions\IdIsRequiredException;
 use Bluestorm\Centrum\Exceptions\IdMustBeIntegerException;
 use Bluestorm\Centrum\Exceptions\ResourceIsRequiredException;
+use Bluestorm\Centrum\Exceptions\ResourceNotFoundException;
 use Bluestorm\Centrum\Exceptions\ValidationErrorsException;
 use Bluestorm\Centrum\Request;
 use Bluestorm\Centrum\Resource;
-use Bluestorm\Centrum\ResourceNotFoundException;
 use Bluestorm\Centrum\Response;
 use PHPUnit\Framework\TestCase;
 
 class RequestTest extends TestCase
 {
 	protected $resource = 'website';
-	protected $apiKey = '6627b354a4cd3f828982d1a8168cd3201afeca1c';
+	protected $apiKey = '';
 	protected $baseUrl = 'http://centrum.dev/api/';
 
 	public function setUp()
 	{
-		Centrum::setApiKey($this->apiKey);
-		Centrum::setBaseUrl($this->baseUrl);
+		$this->apiKey = getenv('API_KEY');
+
+		if(!$this->apiKey)
+		{
+			$this->fail('API key is required to run tests.');
+		}
 
 		if(!Centrum::isAvailable())
 		{
 			$this->fail('API must be available to run tests.');
 		}
+
+		Centrum::setApiKey($this->apiKey);
+		Centrum::setBaseUrl($this->baseUrl);
 	}
 
 	public function testClassExists()

@@ -22,6 +22,11 @@ class Request
 	protected $headers = [];
 	protected $data = [];
 
+	/**
+	 * Request constructor.
+	 * @param $resource
+	 * @throws ResourceIsRequiredException
+	 */
 	public function __construct($resource)
 	{
 		$this->client = new Client([
@@ -37,6 +42,12 @@ class Request
 		$this->headers['X-Authorization'] = Centrum::getApiKey();
 	}
 
+	/**
+	 * @param $method
+	 * @param $endpoint
+	 * @param array $options
+	 * @return Response
+	 */
 	private function call($method, $endpoint, $options = [])
 	{
 		try
@@ -59,19 +70,22 @@ class Request
 		return new Response($this->resource, $response);
 	}
 
+	/**
+	 * @param \Exception $e
+	 * @throws ApiUnavailableException
+	 * @throws AuthenticationException
+	 * @throws ResourceNotValidException
+	 * @throws ValidationErrorsException
+	 */
 	private function handleException(\Exception $e)
 	{
 		if($e instanceof RequestException)
 		{
 			throw new ApiUnavailableException;
 		}
-		if($e->getCode() == 410)
+		elseif($e->getCode() == 410)
 		{
 			throw new ResourceNotValidException($this->resource);
-		}
-		elseif($e->getCode() == 404)
-		{
-			throw new ApiUnavailableException;
 		}
 		elseif($e->getCode() == 401)
 		{
@@ -89,6 +103,11 @@ class Request
 		}
 	}
 
+	/**
+	 * @param $id
+	 * @throws IdIsRequiredException
+	 * @throws IdMustBeIntegerException
+	 */
 	private function checkID($id)
 	{
 		if(is_null($id))
@@ -102,6 +121,10 @@ class Request
 		}
 	}
 
+	/**
+	 * @param int $page
+	 * @return Response
+	 */
 	public function get($page = 1)
 	{
 		$response = $this->call('get', $this->resource, [ 'query' => [ 'page' => $page ] ]);
@@ -109,6 +132,10 @@ class Request
 		return $response;
 	}
 
+	/**
+	 * @param $id
+	 * @return Response|Resource
+	 */
 	public function find($id)
 	{
 		$this->checkID($id);
@@ -118,27 +145,40 @@ class Request
 		return $response->first();
 	}
 
+	/**
+	 * @param $data
+	 * @return Resource
+	 */
 	public function create($data)
 	{
-		$response = $this->call('post', $this->resource, [ 'headers' => $this->headers, 'form_params' => $data, 'debug' => Centrum::getDebug() ]);
+		$response = $this->call('post', $this->resource, [ 'form_params' => $data ]);
 
 		return $response->first();
 	}
 
+	/**
+	 * @param null $id
+	 * @param array $data
+	 * @return Resource
+	 */
 	public function update($id = null, $data = [])
 	{
 		$this->checkID($id);
 
-		$response = $this->call('put', $this->resource . '/' . $id, [ 'headers' => $this->headers, 'form_params' => $data, 'debug' => Centrum::getDebug() ]);
+		$response = $this->call('put', $this->resource . '/' . $id, [ 'form_params' => $data ]);
 
 		return $response->first();
 	}
 
+	/**
+	 * @param null $id
+	 * @return Resource
+	 */
 	public function delete($id = null)
 	{
 		$this->checkID($id);
 
-		$response = $this->call('delete', $this->resource . '/' . $id, [ 'headers' => $this->headers, 'debug' => Centrum::getDebug() ]);
+		$response = $this->call('delete', $this->resource . '/' . $id);
 
 		return $response->first();
 	}

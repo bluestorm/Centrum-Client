@@ -113,11 +113,46 @@ class Centrum
 		self::$debug = $debug;
 	}
 
+	/**
+	 * @return bool
+	 */
 	public static function isAvailable()
 	{
+		self::checkAvailability();
+
 		return self::$available;
 	}
 
+	/**
+	 * @return bool
+	 * @throws ApiUnavailableException
+	 */
+	private static function checkAvailability()
+	{
+		if(empty(self::$resources))
+		{
+			try
+			{
+				self::getResources(false);
+
+				self::$available = true;
+			}
+			catch(ApiUnavailableException $e)
+			{
+				// Allows pure 404 exceptions (not resource 410 not found exceptions) to
+				// throw ApiUnavailableException instead. We catch it to
+
+				self::$available = false;
+			}
+		}
+
+		return self::$available;
+	}
+
+	/**
+	 * @param $resource
+	 * @throws ResourceNotValidException
+	 */
 	public static function checkResourceIsValid($resource)
 	{
 		self::getResources();
@@ -129,30 +164,22 @@ class Centrum
 	}
 
 	/**
+	 * @param bool $checkAvailability
 	 * @return array
 	 */
-	public static function getResources()
+	public static function getResources($checkAvailability = true)
 	{
 		if(empty(self::$resources))
 		{
-			try
+			if($checkAvailability)
 			{
-				$response = new Request('resource');
-				$resources = $response->get();
-
-				self::$resources = array_map(function($resource)
-				{
-					return $resource->resource;
-				}, $resources->get());
+				self::checkAvailability();
 			}
-			catch(ApiUnavailableException $e)
-			{
-				// Allows pure 404 exceptions (not resource 404 not found exceptions) to
-				// throw ResourceNotValidException instead which it would have, had the
-				// server been available.
 
-				self::$available = false;
-			}
+			$response = new Request('resource');
+			$resources = $response->get();
+
+			self::$resources = $resources->get();
 		}
 
 		return self::$resources;

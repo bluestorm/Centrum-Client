@@ -10,11 +10,18 @@ use PHPUnit\Framework\TestCase;
 
 class CentrumTest extends TestCase
 {
-	protected $apiKey = '6627b354a4cd3f828982d1a8168cd3201afeca1c';
+	protected $apiKey = '';
 	protected $baseUrl = 'http://centrum.dev/api/';
 
 	public function setUp()
 	{
+		$this->apiKey = getenv('API_KEY');
+
+		if(!$this->apiKey)
+		{
+			$this->fail('API key is required to run tests.');
+		}
+
 		if(!Centrum::isAvailable())
 		{
 			$this->fail('API must be available to run tests.');

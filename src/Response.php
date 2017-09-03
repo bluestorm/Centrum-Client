@@ -3,7 +3,7 @@
 namespace Bluestorm\Centrum;
 
 use ArrayIterator;
-use Bluestorm\Centrum\Exceptions\AttributeDoesNotExistException;
+use Bluestorm\Centrum\Exceptions\ResourceNotFoundException;
 use IteratorAggregate;
 use function GuzzleHttp\Psr7\parse_query;
 
@@ -13,6 +13,11 @@ class Response implements IteratorAggregate
 	private $resources = [];
 	private $meta = [];
 
+	/**
+	 * Response constructor.
+	 * @param $resource
+	 * @param $response
+	 */
 	public function __construct($resource, $response)
 	{
 		$responseArray = is_array($response) ? $response : json_decode((string) $response->getBody());
@@ -23,35 +28,44 @@ class Response implements IteratorAggregate
 		$this->setMeta($responseArray);
 	}
 
+	/**
+	 * @return ArrayIterator
+	 */
 	public function getIterator()
 	{
 		return new ArrayIterator($this->resources);
 	}
 
+	/**
+	 * @param $response
+	 * @return $this
+	 */
 	private function setResources($response)
 	{
-		if(!isset($response->data))
+		if(isset($response->data))
 		{
-			return [];
-		}
-
-		if(is_array($response->data))
-		{
-			$resources = array_map(function($resourceData)
+			if(is_array($response->data))
 			{
-				return new Resource($this->resource, $resourceData);
-			}, $response->data);
-		}
-		else
-		{
-			$resources = [ new Resource($this->resource, $response->data) ];
-		}
+				$resources = array_map(function($resourceData)
+				{
+					return new Resource($this->resource, $resourceData);
+				}, $response->data);
+			}
+			else
+			{
+				$resources = [ new Resource($this->resource, $response->data) ];
+			}
 
-		$this->resources = $resources;
+			$this->resources = $resources;
+		}
 
 		return $this;
 	}
 
+	/**
+	 * @param $response
+	 * @return $this
+	 */
 	private function setMeta($response)
 	{
 		$this->meta = isset($response->meta) ? $response->meta : [];
@@ -59,11 +73,17 @@ class Response implements IteratorAggregate
 		return $this;
 	}
 
+	/**
+	 * @return null
+	 */
 	public function getPagination()
 	{
 		return isset($this->meta->pagination->links) ? $this->meta->pagination->links : null;
 	}
 
+	/**
+	 * @return null
+	 */
 	public function getNextPage()
 	{
 		if(!isset($this->getPagination()->next))
@@ -77,6 +97,9 @@ class Response implements IteratorAggregate
 		return $parsed_query['page'];
 	}
 
+	/**
+	 * @return null
+	 */
 	public function getPreviousPage()
 	{
 		if(!isset($this->getPagination()->previous))
@@ -90,11 +113,18 @@ class Response implements IteratorAggregate
 		return $parsed_query['page'];
 	}
 
+	/**
+	 * @return array
+	 */
 	public function get()
 	{
 		return $this->resources;
 	}
 
+	/**
+	 * @return mixed
+	 * @throws ResourceNotFoundException
+	 */
 	public function first()
 	{
 		if(!isset($this->resources[0]))
