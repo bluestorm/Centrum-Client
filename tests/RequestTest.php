@@ -16,12 +16,14 @@ use PHPUnit\Framework\TestCase;
 class RequestTest extends TestCase
 {
 	protected $resource = 'website';
-	protected $apiKey = '';
-	protected $baseUrl = 'http://centrum.dev/api/';
+
+	protected $apiKey;
+	protected $baseUrl;
 
 	public function setUp()
 	{
 		$this->apiKey = getenv('API_KEY');
+		$this->baseUrl = getenv('BASE_URL');
 
 		if(!$this->apiKey)
 		{
