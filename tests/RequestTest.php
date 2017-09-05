@@ -25,18 +25,13 @@ class RequestTest extends TestCase
 		$this->apiKey = getenv('API_KEY');
 		$this->baseUrl = getenv('BASE_URL');
 
-		if(!$this->apiKey)
-		{
-			$this->fail('API key is required to run tests.');
-		}
+		Centrum::setApiKey($this->apiKey);
+		Centrum::setBaseUrl($this->baseUrl);
 
 		if(!Centrum::isAvailable())
 		{
 			$this->fail('API must be available to run tests.');
 		}
-
-		Centrum::setApiKey($this->apiKey);
-		Centrum::setBaseUrl($this->baseUrl);
 	}
 
 	public function testClassExists()

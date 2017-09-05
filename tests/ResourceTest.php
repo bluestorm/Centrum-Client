@@ -23,18 +23,13 @@ class ResourceTest extends TestCase
 		$this->apiKey = getenv('API_KEY');
 		$this->baseUrl = getenv('BASE_URL');
 
-		if(!$this->apiKey)
-		{
-			$this->fail('API key is required to run tests.');
-		}
+		Centrum::setApiKey($this->apiKey);
+		Centrum::setBaseUrl($this->baseUrl);
 
 		if(!Centrum::isAvailable())
 		{
 			$this->fail('API must be available to run tests.');
 		}
-
-		Centrum::setApiKey($this->apiKey);
-		Centrum::setBaseUrl($this->baseUrl);
 
 		$this->resourceObject = new Resource('test', json_decode("{
       \"_id\": \"599fe2b1433aca29a1a3f306\",

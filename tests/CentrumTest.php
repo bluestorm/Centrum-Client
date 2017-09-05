@@ -18,20 +18,13 @@ class CentrumTest extends TestCase
 		$this->apiKey = getenv('API_KEY');
 		$this->baseUrl = getenv('BASE_URL');
 
-		if(!$this->apiKey)
-		{
-			$this->fail('API key is required to run tests.');
-		}
+		Centrum::setApiKey($this->apiKey);
+		Centrum::setBaseUrl($this->baseUrl);
 
 		if(!Centrum::isAvailable())
 		{
 			$this->fail('API must be available to run tests.');
 		}
-	}
-
-	public function testClassExists()
-	{
-		$this->assertTrue(class_exists(Centrum::class));
 	}
 
 	public function testCantCreateInstanceOfClass()
@@ -46,13 +39,10 @@ class CentrumTest extends TestCase
 		$this->expectException(ApiKeyRequiredException::class);
 
 		Centrum::setApiKey('');
-		Centrum::getResources();
 	}
 
 	public function testCanSetApiKey()
 	{
-		Centrum::setApiKey($this->apiKey);
-
 		$this->assertEquals($this->apiKey, Centrum::getApiKey());
 	}
 
@@ -74,6 +64,9 @@ class CentrumTest extends TestCase
 
 	public function testCanGetResources()
 	{
+		Centrum::setBaseUrl($this->baseUrl);
+		Centrum::setApiKey($this->apiKey);
+
 		$resources = Centrum::getResources();
 
 		$this->assertTrue(count($resources) > 0);

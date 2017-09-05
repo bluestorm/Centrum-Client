@@ -53,6 +53,8 @@ class Request
 		try
 		{
 			$response = $this->client->request($method, $endpoint, array_merge([ 'headers' => $this->headers, 'debug' => Centrum::getDebug() ], $options));
+
+			return new Response($this->resource, $response);
 		}
 		catch(ConnectException $e)
 		{
@@ -67,25 +69,26 @@ class Request
 			$this->handleException($e);
 		}
 
-		return new Response($this->resource, $response);
+		return null;
 	}
 
 	/**
 	 * @param \Exception $e
 	 * @throws ApiUnavailableException
 	 * @throws AuthenticationException
+	 * @throws ResourceNotFoundException
 	 * @throws ResourceNotValidException
 	 * @throws ValidationErrorsException
 	 */
 	private function handleException(\Exception $e)
 	{
-		if($e instanceof RequestException)
+		if($e->getCode() == 410)
 		{
-			throw new ApiUnavailableException;
+			throw new ResourceNotValidException('Invalid resource: ' . $this->resource);
 		}
-		elseif($e->getCode() == 410)
+		elseif($e->getCode() == 404)
 		{
-			throw new ResourceNotValidException($this->resource);
+			throw new ResourceNotFoundException;
 		}
 		elseif($e->getCode() == 401)
 		{
@@ -97,9 +100,13 @@ class Request
 
 			throw new ValidationErrorsException($errors);
 		}
+		elseif($e instanceof RequestException)
+		{
+			throw new ApiUnavailableException('Request error: ' . $e->getMessage(), $e->getCode(), $e);
+		}
 		else
 		{
-			throw new ApiUnavailableException;
+			throw new ApiUnavailableException('Something went wrong!', $e->getCode(), $e);
 		}
 	}
 

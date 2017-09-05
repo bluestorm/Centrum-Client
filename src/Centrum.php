@@ -144,6 +144,8 @@ class Centrum
 				// throw ApiUnavailableException instead. We catch it to
 
 				self::$available = false;
+
+				throw $e;
 			}
 		}
 
@@ -180,7 +182,10 @@ class Centrum
 			$response = new Request('resource');
 			$resources = $response->get();
 
-			self::$resources = $resources->get();
+			self::$resources = array_map(function($resource)
+			{
+				return $resource->resource;
+			}, $resources->get());
 		}
 
 		return self::$resources;
