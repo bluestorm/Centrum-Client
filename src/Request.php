@@ -56,20 +56,10 @@ class Request
 
 			return new Response($this->resource, $response);
 		}
-		catch(ConnectException $e)
+		catch(\Exception $e)
 		{
 			$this->handleException($e);
 		}
-		catch(ClientException $e)
-		{
-			$this->handleException($e);
-		}
-		catch(RequestException $e)
-		{
-			$this->handleException($e);
-		}
-
-		return null;
 	}
 
 	/**
@@ -82,11 +72,7 @@ class Request
 	 */
 	private function handleException(\Exception $e)
 	{
-		if($e->getCode() == 410)
-		{
-			throw new ResourceNotValidException('Invalid resource: ' . $this->resource);
-		}
-		elseif($e->getCode() == 404)
+		if($e->getCode() == 404)
 		{
 			throw new ResourceNotFoundException;
 		}
@@ -99,10 +85,6 @@ class Request
 			$errors = json_decode((string) $e->getResponse()->getBody(), true);
 
 			throw new ValidationErrorsException($errors);
-		}
-		elseif($e instanceof RequestException)
-		{
-			throw new ApiUnavailableException('Request error: ' . $e->getMessage(), $e->getCode(), $e);
 		}
 		else
 		{

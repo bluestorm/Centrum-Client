@@ -3,6 +3,7 @@
 use Bluestorm\Centrum\Centrum;
 use Bluestorm\Centrum\Exceptions\ApiKeyRequiredException;
 use Bluestorm\Centrum\Exceptions\ApiUnavailableException;
+use Bluestorm\Centrum\Exceptions\BaseUrlRequiredException;
 use Bluestorm\Centrum\Exceptions\ClassNotInstantiableException;
 use Bluestorm\Centrum\Exceptions\ResourceNotValidException;
 use Bluestorm\Centrum\Request;
@@ -21,7 +22,7 @@ class CentrumTest extends TestCase
 		Centrum::setApiKey($this->apiKey);
 		Centrum::setBaseUrl($this->baseUrl);
 
-		if(!Centrum::isAvailable())
+		if(!Centrum::isAvailable(true))
 		{
 			$this->fail('API must be available to run tests.');
 		}
@@ -39,6 +40,13 @@ class CentrumTest extends TestCase
 		$this->expectException(ApiKeyRequiredException::class);
 
 		Centrum::setApiKey('');
+	}
+
+	public function testRequiresBaseUrl()
+	{
+		$this->expectException(BaseUrlRequiredException::class);
+
+		Centrum::setBaseUrl('');
 	}
 
 	public function testCanSetApiKey()
@@ -62,11 +70,24 @@ class CentrumTest extends TestCase
 		Centrum::setDebug(false); // Undo that
 	}
 
+	public function testCanCheckAvailability()
+	{
+		$this->assertTrue(Centrum::isAvailable(true));
+	}
+
+	public function testIsAvailableReturnsFalseWhenApiUnavailable()
+	{
+		Centrum::setBaseUrl('http://bad-base-url2.com/api/');
+
+		$this->expectException(ApiUnavailableException::class);
+
+		$available = Centrum::isAvailable(true);
+
+		$this->assertFalse($available);
+	}
+
 	public function testCanGetResources()
 	{
-		Centrum::setBaseUrl($this->baseUrl);
-		Centrum::setApiKey($this->apiKey);
-
 		$resources = Centrum::getResources();
 
 		$this->assertTrue(count($resources) > 0);

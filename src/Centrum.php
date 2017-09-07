@@ -4,6 +4,7 @@ namespace Bluestorm\Centrum;
 
 use Bluestorm\Centrum\Exceptions\ApiKeyRequiredException;
 use Bluestorm\Centrum\Exceptions\ApiUnavailableException;
+use Bluestorm\Centrum\Exceptions\BaseUrlRequiredException;
 use Bluestorm\Centrum\Exceptions\ClassNotInstantiableException;
 use Bluestorm\Centrum\Exceptions\ResourceNotValidException;
 
@@ -31,7 +32,7 @@ class Centrum
 	/**
 	 * @var array $resources
 	 */
-	private static $resources = [];
+	private static $availableResources = [];
 
 	/**
 	 * @var bool $available
@@ -75,7 +76,7 @@ class Centrum
 	{
 		self::$apiKey = $key;
 
-		self::checkConfig();
+		self::checkConfig('apiKey');
 	}
 
 	/**
@@ -94,6 +95,8 @@ class Centrum
 	public static function setBaseUrl($baseUrl)
 	{
 		self::$baseUrl = $baseUrl;
+
+		self::checkConfig('baseUrl');
 	}
 
 	/**
@@ -106,7 +109,6 @@ class Centrum
 
 	/**
 	 * @param bool $debug
-	 *
 	 * @return bool
 	 */
 	public static function setDebug($debug)
@@ -115,34 +117,33 @@ class Centrum
 	}
 
 	/**
+	 * @param bool $force
 	 * @return bool
 	 */
-	public static function isAvailable()
+	public static function isAvailable($force = false)
 	{
-		self::checkAvailability();
+		self::checkAvailability($force);
 
 		return self::$available;
 	}
 
 	/**
+	 * @param bool $force
 	 * @return bool
 	 * @throws ApiUnavailableException
 	 */
-	private static function checkAvailability()
+	private static function checkAvailability($force = false)
 	{
-		if(empty(self::$resources))
+		if(empty(self::$availableResources) || $force)
 		{
 			try
 			{
-				self::getResources(false);
+				self::getResources($force);
 
 				self::$available = true;
 			}
 			catch(ApiUnavailableException $e)
 			{
-				// Allows pure 404 exceptions (not resource 410 not found exceptions) to
-				// throw ApiUnavailableException instead. We catch it to
-
 				self::$available = false;
 
 				throw $e;
@@ -160,35 +161,30 @@ class Centrum
 	{
 		self::getResources();
 
-		if(!in_array($resource, self::$resources))
+		if(!in_array($resource, self::$availableResources))
 		{
 			throw new ResourceNotValidException($resource);
 		}
 	}
 
 	/**
-	 * @param bool $checkAvailability
+	 * @param bool $force
 	 * @return array
 	 */
-	public static function getResources($checkAvailability = true)
+	public static function getResources($force = false)
 	{
-		if(empty(self::$resources))
+		if(empty(self::$availableResources) || $force)
 		{
-			if($checkAvailability)
-			{
-				self::checkAvailability();
-			}
-
 			$response = new Request('resource');
 			$resources = $response->get();
 
-			self::$resources = array_map(function($resource)
+			self::$availableResources = array_map(function($resource)
 			{
 				return $resource->resource;
 			}, $resources->get());
 		}
 
-		return self::$resources;
+		return self::$availableResources;
 	}
 
 	/**
@@ -204,13 +200,26 @@ class Centrum
 	}
 
 	/**
+	 * @param $property
 	 * @throws ApiKeyRequiredException
+	 * @throws BaseUrlRequiredException
 	 */
-	private static function checkConfig()
+	private static function checkConfig($property = null)
 	{
-		if(empty(self::$apiKey) || !self::$apiKey || strlen(self::$apiKey) < 1)
+		if($property === 'apiKey' || $property === null)
 		{
-			throw new ApiKeyRequiredException;
+			if(empty(self::$apiKey) || !self::$apiKey || strlen(self::$apiKey) < 1)
+			{
+				throw new ApiKeyRequiredException;
+			}
+		}
+
+		if($property === 'baseUrl' || $property === null)
+		{
+			if(empty(self::$baseUrl) || !self::$baseUrl || strlen(self::$baseUrl) < 1)
+			{
+				throw new BaseUrlRequiredException;
+			}
 		}
 	}
 }
